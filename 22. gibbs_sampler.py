@@ -95,7 +95,46 @@ def _motifs(dna, k, profile):
     return(motifs)
 
 
-p = [0.1, 0.2, 0.3]
+dna = 
+_motifs(['ATGAGGTC', 'GCCCTAGA', 'AAATAGAT', 'TTGTGCTA'], 3, motifs_to_profile(['GTC', 'CCC', 'ATA', 'GCT']))
+
+
+def randomized_motif_search(dna, k, t):
+    motifs = []
+    for s in dna:
+        rand = random.randint(0,len(dna[0]) - k)
+        motifs.append(s[rand:(rand + k)])
+    best_motifs = motifs[:]
+        
+
+    # strictly decreasing function, once it stops decreasing i.e. gets to 0 or just stops decreasing
+    # the function will stop
+    while True:
+        profile = motifs_to_profile(motifs)
+        
+        # given this profile, find the the most probable motif matrix in dna, then iterate
+        motifs = _motifs(dna, k, profile)
+
+        if score(motifs) < score(best_motifs):
+            best_motifs = motifs[:]
+        else:
+            return(best_motifs)
+        
+        
+
+def randomized_motif_search_simulation(dna, k, t, N):
+    
+#    score_min = score(randomized_motif_search(dna, k, t))
+    score_min = float("inf")
+    for i in range(0, N + 1):
+        rms = randomized_motif_search(dna, k, t)
+        if score(rms) < score_min:
+            score_min = score(rms)
+            optimal_motifs = rms[:]
+
+    return(optimal_motifs)
+
+
 
 def random_p (p):
     s = sum(p)
@@ -116,8 +155,6 @@ def random_p (p):
 
 
 
-
-
 def profile_randomly_generated_kmer(text, k, profile):
     pr = []
     for i in range(0, len(text) - k + 1):
@@ -129,13 +166,16 @@ def profile_randomly_generated_kmer(text, k, profile):
 
 def gibbs_sampler(dna, k, t, N):
     
+    best_motifs = []
     motifs = []
     # initial motifs
-    for s in dna:
-        rand = random.randint(0, len(dna[0]) - k)
-        motifs.append(s[rand:(rand + k)])
-    best_motifs = motifs
+#    for s in dna:
+#        rand = random.randint(0, len(dna[0]) - k)
+#        motifs.append(s[rand:(rand + k)])
+#    best_motifs = motifs[:]
     
+    motifs = randomized_motif_search_simulation(dna, k, t, 30)
+    best_motifs = motifs[:]
     for j in range(0, N):
         i = random.randint(0, t-1)
         motifs.pop(i)
@@ -145,23 +185,37 @@ def gibbs_sampler(dna, k, t, N):
         motifs.insert(i, motif_i)
         
         if score(motifs) < score(best_motifs):
-            best_motifs = motifs
+            best_motifs = motifs[:]
+#        print(score(motifs), score(best_motifs), best_motifs)
         
+    return(best_motifs)
+
+def repeated_gibbs_sample(dna, k, t, N, R):
+    
+    best_motifs = randomized_motif_search_simulation(dna, k, t, 30)
+    for r in range(0, R):
+        motifs = gibbs_sampler(dna, k, t, N)
+        
+        if score(motifs) < score(best_motifs):
+            best_motifs = motifs[:]
+    
     return(best_motifs)
     
 dna = ['CGCCCCTCTCGGGGGTGTTCAGTAACCGGCCA', 'GGGCGAGGTATGTGTAAGTGCCAAGGTGCCAG', 'TAGTACCGAGACCGAAAGAAGTATACAGGCGT', 'TAGATCAAGTTTCAGGTGCACGTCGGTGAACC', 'AATCCACCAGCTCCACGTGCAATGTTGGCCTA']
 k = 8
 t = 5
-N = 2000
+N = 100
+R = 20
 
-with open('C:/Users/ainesh.sewak/Downloads/dataset_163_4.txt') as f:
+with open('C:/Users/ainesh.sewak/Downloads/dataset_163_4 (3).txt') as f:
     file = f.read().splitlines()
 
 k = int(file[0].split()[0])
 t = int(file[0].split()[1])
-N = 2000
+N = 100
 dna = file[1:]
 
+gibbs_motifs = repeated_gibbs_sample(dna, k, t, N, R)
 
 gibbs_motifs = gibbs_sampler(dna, k, t, N)
 #score(rand_motifs)
