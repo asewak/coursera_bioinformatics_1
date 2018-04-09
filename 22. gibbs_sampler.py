@@ -7,6 +7,7 @@ Created on Fri Apr  6 17:37:35 2018
 
   
 import itertools
+from itertools import accumulate
 import random
 
 
@@ -113,20 +114,58 @@ def random_p (p):
 
     return(val)
 
-dna = ['CGCCCCTCTCGGGGGTGTTCAGTAACCGGCCA', 'GGGCGAGGTATGTGTAAGTGCCAAGGTGCCAG', 'TAGTACCGAGACCGAAAGAAGTATACAGGCGT', 'TAGATCAAGTTTCAGGTGCACGTCGGTGAACC', 'AATCCACCAGCTCCACGTGCAATGTTGGCCTA']
-text = dna[0]
-k = 8
 
-motifs = []
-for s in dna:
-    rand = random.randint(0,len(dna[0]) - k)
-    motifs.append(s[rand:(rand + k)])
-profile = motifs_to_profile(motifs)
+
+
 
 def profile_randomly_generated_kmer(text, k, profile):
+    pr = []
     for i in range(0, len(text) - k + 1):
-        pr = 
+        pattern = text[i:i+k]
+        pr.append(pr_profile(pattern, k, profile))
+    
+    return(pr)
 
+
+def gibbs_sampler(dna, k, t, N):
+    
+    motifs = []
+    # initial motifs
+    for s in dna:
+        rand = random.randint(0, len(dna[0]) - k)
+        motifs.append(s[rand:(rand + k)])
+    best_motifs = motifs
+    
+    for j in range(0, N):
+        i = random.randint(0, t-1)
+        motifs.pop(i)
+        profile = motifs_to_profile(motifs)
+        rand = random_p(profile_randomly_generated_kmer(dna[i], k, profile))
+        motif_i = dna[i][rand:rand+k]
+        motifs.insert(i, motif_i)
+        
+        if score(motifs) < score(best_motifs):
+            best_motifs = motifs
+        
+    return(best_motifs)
+    
+dna = ['CGCCCCTCTCGGGGGTGTTCAGTAACCGGCCA', 'GGGCGAGGTATGTGTAAGTGCCAAGGTGCCAG', 'TAGTACCGAGACCGAAAGAAGTATACAGGCGT', 'TAGATCAAGTTTCAGGTGCACGTCGGTGAACC', 'AATCCACCAGCTCCACGTGCAATGTTGGCCTA']
+k = 8
+t = 5
+N = 2000
+
+with open('C:/Users/ainesh.sewak/Downloads/dataset_163_4.txt') as f:
+    file = f.read().splitlines()
+
+k = int(file[0].split()[0])
+t = int(file[0].split()[1])
+N = 2000
+dna = file[1:]
+
+
+gibbs_motifs = gibbs_sampler(dna, k, t, N)
+#score(rand_motifs)
+print('\n'.join(map(str, gibbs_motifs)))
 
 
 def randomized_motif_search(dna, k, t, n):
